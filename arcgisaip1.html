@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陕西省专题地图</title>
+    <style>
+        html, body {
+          padding: 0;
+          margin: 0;
+          height: 100%;
+          width: 100%;
+          font-family: Arial, sans-serif;
+        }
+        
+        /* 页面布局 */
+        .container {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+        
+        /* 页眉样式 */
+        .header {
+          height: 60px;
+          background-color: #2c3e50;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+          margin: 0;
+          font-size: 20px;
+        }
+        
+        /* 主内容区样式 */
+        .main-content {
+          display: flex;
+          flex: 1;
+          height: calc(100% - 60px);
+        }
+        
+        /* 地图区域样式 */
+        .map-area {
+          flex: 3;
+          position: relative;
+        }
+        
+        /* 底图库区域样式 */
+        .basemap-area {
+          flex: 1;
+          background-color: #f5f5f5;
+          padding: 15px;
+          overflow-y: auto;
+          box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+        }
+        
+        /* 微件样式调整 */
+        .esri-ui-corner .esri-component {
+          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        
+        /* 底图库项目样式 */
+        .basemap-item {
+          cursor: pointer;
+          margin-bottom: 10px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          overflow: hidden;
+          transition: all 0.2s;
+        }
+        
+        .basemap-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .basemap-thumbnail {
+          height: 80px;
+          background-size: cover;
+          background-position: center;
+        }
+        
+        .basemap-title {
+          padding: 8px;
+          text-align: center;
+          background-color: white;
+          font-size: 14px;
+        }
+    </style>
+    <script type="module" src="https://js.arcgis.com/calcite-components/3.0.3/calcite.esm.js"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.32/"></script>
+    <script type="module" src="https://js.arcgis.com/map-components/4.32/arcgis-map-components.esm.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 页眉区域 -->
+        <div class="header">
+            <h1>陕西省专题地图</h1>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 地图区域 -->
+            <div class="map-area">
+                <arcgis-map item-id="237b9584339446a0b56317b5962a4971"
+                    center="108.805, 34.027" 
+                    zoom="4">
+                </arcgis-map>
+            </div>
+            
+            <!-- 底图库区域 -->
+            <div class="basemap-area">
+                <h3>底图库</h3>
+                <div id="basemapGallery"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        require([
+            "esri/layers/FeatureLayer",
+            "esri/widgets/Legend",
+            "esri/widgets/ScaleBar",
+            "esri/widgets/Search",
+            "esri/widgets/LayerList",
+            "esri/widgets/BasemapGallery",
+            "esri/widgets/Expand",
+            "esri/Basemap",
+            "esri/widgets/BasemapToggle"
+        ], function(
+            FeatureLayer, Legend, ScaleBar, Search, 
+            LayerList, BasemapGallery, Expand, Basemap, BasemapToggle
+        ) {
+            const arcgisMap = document.querySelector("arcgis-map");
+            
+            arcgisMap.addEventListener("arcgisViewReadyChange", () => {
+                // 添加陕西省专题图层
+                const shaanxiLayer = new FeatureLayer({
+                    url: "https://www.geosceneonline.cn/server/rest/services/Hosted/陕西省22/FeatureServer/0"
+                });
+                arcgisMap.map.add(shaanxiLayer);
+                
+                const view = arcgisMap.view;
+                
+                // 添加比例尺
+                const scaleBar = new ScaleBar({
+                    view: view,
+                    unit: "metric"
+                });
+                view.ui.add(scaleBar, {
+                    position: "bottom-left"
+                });
+                
+                // 添加图例
+                const legend = new Legend({
+                    view: view
+                });
+                
+                // 将图例放在可折叠的容器中
+                const legendExpand = new Expand({
+                    view: view,
+                    content: legend,
+                    expandIconClass: "esri-icon-legend",
+                    expandTooltip: "图例"
+                });
+                view.ui.add(legendExpand, "top-right");
+                
+                // 添加搜索框
+                const searchWidget = new Search({
+                    view: view,
+                    includeDefaultSources: false,
+                    sources: [{
+                        layer: shaanxiLayer,
+                        searchFields: ["name"],
+                        displayField: "name",
+                        exactMatch: false,
+                        outFields: ["*"],
+                        placeholder: "搜索陕西省要素",
+                        name: "陕西省要素",
+                        zoomScale: 50000
+                    }]
+                });
+                view.ui.add(searchWidget, {
+                    position: "top-left",
+                    index: 0
+                });
+                
+                // 添加图层列表
+                const layerList = new LayerList({
+                    view: view
+                });
+                
+                const layerListExpand = new Expand({
+                    view: view,
+                    content: layerList,
+                    expandIconClass: "esri-icon-layers",
+                    expandTooltip: "图层列表"
+                });
+                view.ui.add(layerListExpand, "top-right");
+                
+                // 添加底图库
+                const basemapGallery = new BasemapGallery({
+                    view: view,
+                    container: document.getElementById("basemapGallery")
+                });
+                
+                // 添加底图切换按钮
+                const toggle = new BasemapToggle({
+                    view: view,
+                    nextBasemap: "hybrid"
+                });
+                view.ui.add(toggle, "bottom-right");
+            });
+        });
+    </script>
+</body>
+</html>
